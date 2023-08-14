@@ -89,9 +89,9 @@ with mp_holistic.Holistic(
     results = holistic.process(image)
     
     # ------------------------------------
-    # 랜드마크 추출
+    # 랜드마크 추출 및 전송
     
-    # 왼손, 오른손, 몸, 얼굴 좌표 추출해 str로 변환
+    # 왼손, 오른손, 몸, 얼굴 좌표 추출해 str로 변환 후 저장
     data_left = str(results.left_hand_landmarks)
     data_right = str(results.right_hand_landmarks)
     data_pose = str(results.pose_world_landmarks)
@@ -102,35 +102,13 @@ with mp_holistic.Holistic(
     # f.write(data)
     # f.close()
 
-    # f = open("pose_world_landmarks.txt", 'w')
-    # f.write(data_pose)
-    # f.close()
-
-    # f = open("face_landmarks.txt", 'w')
-    # f.write(data_face)
-    # f.close()
-
-    # f = open("right_hand_landmarks.txt", 'w')
-    # f.write(data_right)
-    # f.close()
-
-    # f = open("left_hand_landmarks.txt", 'w')
-    # f.write(data_left)
-    # f.close()
-
-    # # 랜드마크 터미널 출력
-    # print(data_pose)
-    # print(data_face)
-    # print(data_right)
-    # print(data_left)
-
-    # --------------------------------------
     # 소켓 통신을 이용한 좌표 전송
     face = transformer(data_face, "face")
     left = transformer(data_left, "left")
     right = transformer(data_right, "right")
     pose = transformer(data_pose, "pose")
 
+    # face는 landmark가 너무 많아 터미널에서 보기 힘들어 생략
     # connectionSock.send(face.encode('utf-8'))
     connectionSock.send(left.encode('utf-8'))
     connectionSock.send(right.encode('utf-8'))
