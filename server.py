@@ -3,6 +3,32 @@ os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
 import cv2
 import mediapipe as mp
 from socket import *
+import re
+import json
+
+# -----------------------------------------------------
+# 랜드마크 추출 함수
+# 정규 표현식(x, y, z) 추출
+# landmarks에서 x, y, z만 추출
+# ([+-]?\d+\.\d+) 부분이 각각의 x, y, z 값을 추출하는데 사용
+# - 또는 + 부호의 유무와 상관없이 소수점이 포함된 숫자를 추출
+pattern = r"landmark {\s+x: ([+-]?\d+\.\d+)\s+y: ([+-]?\d+\.\d+)\s+z: ([+-]?\d+\.\d+)"
+
+def transformer(data, part):
+  # 현재 문자열에 패턴을 적용한 str 저장
+  matches = re.findall(pattern, data)
+
+  output_data = {part: {}}
+
+  for idx, match in enumerate(matches):
+      x, y, z = map(float, match)
+      output_data[part][int(idx)] = {"x": round(x, 3), "y": round(y, 3), "z": round(z, 3)}
+
+  output_json = json.dumps(output_data, indent=2, ensure_ascii=False).replace('"', '')
+  
+  return output_json
+
+# -----------------------------------------------------
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -70,16 +96,15 @@ with mp_holistic.Holistic(
     data_right = str(results.right_hand_landmarks)
     data_pose = str(results.pose_world_landmarks)
     data_face = str(results.face_landmarks)
-    data = 'Face Landmarks\n' + data_face + '\n\n\n\n\n\n\n' + 'Left Hands Landmarks\n' + data_left + '\n\n\n\n\n\n\n' + 'Right Hands Landmarks\n' + data_right + '\n\n\n\n\n\n\n' + 'Pose Landmarks\n' + data_pose
 
-    # txt파일로 출력
-    f = open("all_landmarks.txt", 'w')
-    f.write(data)
-    f.close()
+    # # txt파일로 출력
+    # f = open("all_landmarks.txt", 'w')
+    # f.write(data)
+    # f.close()
 
-    f = open("pose_world_landmarks.txt", 'w')
-    f.write(data_pose)
-    f.close()
+    # f = open("pose_world_landmarks.txt", 'w')
+    # f.write(data_pose)
+    # f.close()
 
     # f = open("face_landmarks.txt", 'w')
     # f.write(data_face)
@@ -101,8 +126,15 @@ with mp_holistic.Holistic(
 
     # --------------------------------------
     # 소켓 통신을 이용한 좌표 전송
+    face = transformer(data_face, "face")
+    left = transformer(data_left, "left")
+    right = transformer(data_right, "right")
+    pose = transformer(data_pose, "pose")
 
-    connectionSock.send(data.encode('utf-8'))
+    # connectionSock.send(face.encode('utf-8'))
+    connectionSock.send(left.encode('utf-8'))
+    connectionSock.send(right.encode('utf-8'))
+    connectionSock.send(pose.encode('utf-8'))
     
     # --------------------------------------
 
