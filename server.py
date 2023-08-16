@@ -30,15 +30,6 @@ def transformer(data, part):
 
 # -----------------------------------------------------
 
-mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
-mp_holistic = mp.solutions.holistic
-
-# 웹캠으로 입력
-cap = cv2.VideoCapture(0)
-
-# --------------------------------------
-
 # 소켓 사전 연결
 port = 25001
 
@@ -55,9 +46,14 @@ serverSock.listen(1)
 # 기존에 생성한 serverSock이 아닌 새로운 connectionSock를 통해서 데이터 주고받음
 connectionSock, addr = serverSock.accept()
 
-
 # --------------------------------------
 
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
+mp_holistic = mp.solutions.holistic
+
+# 웹캠으로 입력
+cap = cv2.VideoCapture(0)
 
 # 모델 초기화
 with mp_holistic.Holistic(
@@ -87,34 +83,6 @@ with mp_holistic.Holistic(
     image.flags.writeable = False
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = holistic.process(image)
-    
-    # ------------------------------------
-    # 랜드마크 추출 및 전송
-    
-    # 왼손, 오른손, 몸, 얼굴 좌표 추출해 str로 변환 후 저장
-    data_left = str(results.left_hand_landmarks)
-    data_right = str(results.right_hand_landmarks)
-    data_pose = str(results.pose_world_landmarks)
-    data_face = str(results.face_landmarks)
-
-    # # txt파일로 출력
-    # f = open("all_landmarks.txt", 'w')
-    # f.write(data)
-    # f.close()
-
-    # 소켓 통신을 이용한 좌표 전송
-    face = transformer(data_face, "face")
-    left = transformer(data_left, "left")
-    right = transformer(data_right, "right")
-    pose = transformer(data_pose, "pose")
-
-    # face는 landmark가 너무 많아 터미널에서 보기 힘들어 생략
-    # connectionSock.send(face.encode('utf-8'))
-    connectionSock.send(left.encode('utf-8'))
-    connectionSock.send(right.encode('utf-8'))
-    connectionSock.send(pose.encode('utf-8'))
-    
-    # --------------------------------------
 
     # 영상 출력
     image.flags.writeable = True
@@ -162,6 +130,43 @@ with mp_holistic.Holistic(
         landmark_drawing_spec=mp_drawing_styles
         .get_default_pose_landmarks_style())
     
+    # ------------------------------------
+    # 랜드마크 추출 및 전송
+    
+    # 왼손, 오른손, 몸, 얼굴 좌표 추출해 str로 변환 후 저장
+    data_left = str(results.left_hand_landmarks)
+    data_right = str(results.right_hand_landmarks)
+    data_pose = str(results.pose_world_landmarks)
+    data_face = str(results.face_landmarks)
+
+    # # txt파일로 출력
+    # f = open("all_landmarks.txt", 'w')
+    # f.write(data)
+    # f.close()
+
+    # 소켓 통신을 이용한 좌표 전송
+    face = transformer(data_face, "face")
+    left = transformer(data_left, "left")
+    right = transformer(data_right, "right")
+    pose = transformer(data_pose, "pose")
+
+    # landmarks = face + left + right + pose
+    landmarks = left + right + pose
+    # face = face[:-1]
+    # left = left[1:-1]
+    # right = right[1:-1]
+    # pose = pose[1:]
+
+    # face는 landmark가 너무 많아 터미널에서 보기 힘들어 생략
+    # connectionSock.send(face.encode('utf-8'))
+    # connectionSock.send(left.encode('utf-8'))
+    # connectionSock.send(right.encode('utf-8'))
+    # connectionSock.send(pose.encode('utf-8'))
+
+    # 전체 랜드마크 전송
+    connectionSock.send(landmarks.encode('utf-8'))
+    
+    # --------------------------------------
     # 좌우반전
     # esc키를 누르면 종료되며 소켓 닫음
     cv2.imshow('MediaPipe Holistic', cv2.flip(image, 1))
