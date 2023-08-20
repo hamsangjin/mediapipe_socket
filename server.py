@@ -18,13 +18,13 @@ def transformer(data, part):
   # 현재 문자열에 패턴을 적용한 str 저장
   matches = re.findall(pattern, data)
 
-  output_data = {part: {}}
+  output_data = {part: []}
 
   for idx, match in enumerate(matches):
       x, y, z = map(float, match)
-      output_data[part][int(idx)] = {"x": round(x, 3), "y": round(y, 3), "z": round(z, 3)}
+      output_data[part].append({"x": round(x, 3), "y": round(y, 3), "z": round(z, 3)})
 
-  output_json = json.dumps(output_data, indent=2, ensure_ascii=False).replace('"', '')
+  output_json = json.dumps(output_data, indent=2, ensure_ascii=False)
   
   return output_json
 
@@ -35,6 +35,9 @@ port = 25001
 
 # AF는 주소 체계로, 거의 AF_INET 사용 AF_INET은 IPv4, AF_INET6은 IPv6를 의미
 serverSock = socket(AF_INET, SOCK_STREAM)
+
+# 재사용 대기시간 없애기
+serverSock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
 # ''는 AF_INET에서 모든 인터페이스와 연결한다는 의미
 serverSock.bind(('', port))
@@ -139,16 +142,16 @@ with mp_holistic.Holistic(
     data_pose = str(results.pose_world_landmarks)
     data_face = str(results.face_landmarks)
 
-    # # txt파일로 출력
-    # f = open("all_landmarks.txt", 'w')
-    # f.write(data)
-    # f.close()
-
     # 소켓 통신을 이용한 좌표 전송
     face = transformer(data_face, "face")
     left = transformer(data_left, "left")
     right = transformer(data_right, "right")
     pose = transformer(data_pose, "pose")
+
+    # txt파일로 출력
+    # f = open("pose_landmarks.txt", 'w')
+    # f.write(pose)
+    # f.close()
 
     # landmarks = face + left + right + pose
     landmarks = left + right + pose
