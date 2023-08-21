@@ -15,14 +15,22 @@ import json
 pattern = r"landmark {\s+x: ([+-]?\d+\.\d+)\s+y: ([+-]?\d+\.\d+)\s+z: ([+-]?\d+\.\d+)"
 
 def transformer(data, part):
-  # 현재 문자열에 패턴을 적용한 str 저장
-  matches = re.findall(pattern, data)
 
-  output_data = {part: []}
+  # 랜드마크 전처리
+  matches_list = []
 
-  for idx, match in enumerate(matches):
-      x, y, z = map(float, match)
-      output_data[part].append({"x": round(x, 3), "y": round(y, 3), "z": round(z, 3)})
+  # 전처리 전의 데이터를 matches_list에 하나씩 저장
+  for i in range(len(data)):
+    matches_list.append(re.findall(pattern, data[i]))
+
+  # face 제외하고 일단 사전형 생성
+  output_data = {part[0]: [], part[1]: [], part[2]: []}
+
+  # left - right - pose 순
+  for i, matches in enumerate(matches_list):
+    for _, match in enumerate(matches):
+        x, y, z = map(float, match)
+        output_data[part[i]].append({"x": round(x, 3), "y": round(y, 3), "z": round(z, 3)})
 
   output_json = json.dumps(output_data, indent=2, ensure_ascii=False)
   
@@ -141,34 +149,26 @@ with mp_holistic.Holistic(
     data_right = str(results.right_hand_landmarks)
     data_pose = str(results.pose_world_landmarks)
     data_face = str(results.face_landmarks)
+    
+    # face 포함해서 전송
+    # part = ["face", "left", "right", "pose"]
+    # part_data = [data_face, data_left, data_right, data_pose]
+
+    # face 제외하고 전송
+    part = ["left", "right", "pose"]
+    part_data = [data_left, data_right, data_pose]
 
     # 소켓 통신을 이용한 좌표 전송
-    face = transformer(data_face, "face")
-    left = transformer(data_left, "left")
-    right = transformer(data_right, "right")
-    pose = transformer(data_pose, "pose")
+    landmarks = transformer(part_data, part)
 
+    # 전체 랜드마크 전송
+    connectionSock.send(landmarks.encode('utf-8'))
+    
     # txt파일로 출력
     # f = open("pose_landmarks.txt", 'w')
     # f.write(pose)
     # f.close()
 
-    # landmarks = face + left + right + pose
-    landmarks = left + right + pose
-    # face = face[:-1]
-    # left = left[1:-1]
-    # right = right[1:-1]
-    # pose = pose[1:]
-
-    # face는 landmark가 너무 많아 터미널에서 보기 힘들어 생략
-    # connectionSock.send(face.encode('utf-8'))
-    # connectionSock.send(left.encode('utf-8'))
-    # connectionSock.send(right.encode('utf-8'))
-    # connectionSock.send(pose.encode('utf-8'))
-
-    # 전체 랜드마크 전송
-    connectionSock.send(landmarks.encode('utf-8'))
-    
     # --------------------------------------
     # 좌우반전
     # esc키를 누르면 종료되며 소켓 닫음
