@@ -33,7 +33,7 @@ def transformer(data, part):
         output_data[part[i]].append({"x": round(x, 3), "y": round(y, 3), "z": round(z, 3)})
 
   output_json = json.dumps(output_data, indent=2, ensure_ascii=False)
-  
+
   return output_json
 
 # -----------------------------------------------------
