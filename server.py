@@ -57,6 +57,9 @@ serverSock.listen(1)
 # 기존에 생성한 serverSock이 아닌 새로운 connectionSock를 통해서 데이터 주고받음
 connectionSock, addr = serverSock.accept()
 
+# 전송 유무 결정
+flag = False
+
 # --------------------------------------
 
 mp_drawing = mp.solutions.drawing_utils
@@ -158,11 +161,20 @@ with mp_holistic.Holistic(
     part = ["left", "right", "pose"]
     part_data = [data_left, data_right, data_pose]
 
-    # 소켓 통신을 이용한 좌표 전송
-    landmarks = transformer(part_data, part)
+    # 좌우반전해 영상출력
+    cv2.imshow('MediaPipe Holistic', cv2.flip(image, 1))
 
-    # 전체 랜드마크 전송
-    connectionSock.send(landmarks.encode('utf-8'))
+    # s키로 landmark 전송 제어
+    if cv2.waitKey(5) & 0xFF == ord('s'):
+      flag = not flag
+      
+    # flag가 True면 Landmarks 전송
+    if flag:
+      # 소켓 통신을 이용한 좌표 전송
+      landmarks = transformer(part_data, part)
+
+      # 전체 랜드마크 전송
+      connectionSock.send(landmarks.encode('utf-8'))
     
     # txt파일로 출력
     # f = open("pose_landmarks.txt", 'w')
@@ -170,9 +182,7 @@ with mp_holistic.Holistic(
     # f.close()
 
     # --------------------------------------
-    # 좌우반전
     # esc키를 누르면 종료되며 소켓 닫음
-    cv2.imshow('MediaPipe Holistic', cv2.flip(image, 1))
     if cv2.waitKey(5) & 0xFF == 27:
       serverSock.close()
       connectionSock.close()
