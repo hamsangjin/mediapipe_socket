@@ -7,6 +7,7 @@ import mediapipe as mp
 import torch
 from socket import *
 import re
+import json
 
 # -----------------------------------------------------
 # 랜드마크 추출 함수
@@ -101,7 +102,7 @@ while cap.isOpened():
     image.flags.writeable = True
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     
-    # 감지된 객체들에 대해서 반복
+    # 감지된 객체(사람)들에 대해서 반복
     for (xmin, ymin, xmax, ymax, confidence, clas) in result.xyxy[0].tolist():
         # 자세 추정을 위한 mediapipe holistic 객체를 초기화
         with mp_holistic.Holistic(min_detection_confidence=0.3, min_tracking_confidence=0.3) as holistic:
@@ -131,22 +132,47 @@ while cap.isOpened():
             # part_data = [data_face, data_left, data_right, data_pose]
 
             # face 제외하고 전송
-            part = ["left", "right", "pose"]
-            part_data = [data_left, data_right, data_pose]
+            temp = [data_left, data_right, data_pose]
+            part_data = []
+            part_data.append(temp)
             
-            # s키로 landmark 전송 제어
-            if cv2.waitKey(5) & 0xFF == ord('s'):
-                flag = not flag
-            
-            # flag가 True면 Landmarks 전송
-            if flag:
-                # 소켓 통신을 이용한 좌표 전송
-                landmarks = transformer(part_data, part)
 
-                # 전체 랜드마크 전송
-                connectionSock.send(landmarks.encode('utf-8'))
+    # s키로 landmark 전송 제어
+    if cv2.waitKey(5) & 0xFF == ord('s'):
+        flag = not flag
+    
+    # flag가 True면 Landmarks 전송
+    if flag:
+        # 소켓 통신을 이용한 좌표 전송
+        landmarks = []
+        # []로 한 프레임에 잡힌 객체들 묶기
+        for i in range(len(part_data)):
+            landmarks.append(transformer(part_data[i], ["left", "right", "pose"]))
+        # {}로 또 묶기
+        landmarks = {"data": landmarks}
+        # json으로 변환
+        landmarks = json.dumps(landmarks, indent=2, ensure_ascii=False)
 
-            # --------------------------------------------
+        # 전체 랜드마크 전송
+        connectionSock.send(landmarks.encode('utf-8'))
+
+# {
+#   "1": [
+#       {
+#         "left": [],
+#         "right": [],
+#         "pose": []
+#       },
+#                {
+#         "left": [],
+#         "right": [],
+#         "pose": []
+#       },
+#         ]
+# }
+
+
+    # --------------------------------------------
 
     # 랜드마크 화면 출력
     cv2.imshow('MediaPipe Holistic', cv2.flip(image, 1))

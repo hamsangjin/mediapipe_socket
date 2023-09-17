@@ -27,11 +27,10 @@ int serverPort = 25001; // 파이썬 서버와 동일한 포트 번호
       // 받은 데이터의 길이가 5보다 작으면 루프 종료
       if (dataReceived.Length < 5)
       {
-          Console.WriteLine("Received data is too short. Exiting loop.");
+          Console.WriteLine("웹캠이 종료되었으니 수신 종료");
           break;
       }
 
-      // 데이터 처리 후, 루프 반복 혹은 종료 결정
   }
 
   // 연결 종료

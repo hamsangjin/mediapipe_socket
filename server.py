@@ -143,9 +143,18 @@ with mp_holistic.Holistic(
         mp_holistic.POSE_CONNECTIONS,
         landmark_drawing_spec=mp_drawing_styles
         .get_default_pose_landmarks_style())
+
+    # 좌우반전해 영상출력
+    cv2.imshow('MediaPipe Holistic', cv2.flip(image, 1))
+
+    
     
     # ------------------------------------
     # 랜드마크 추출 및 전송
+
+    # s키로 landmark 전송 제어
+    if cv2.waitKey(5) & 0xFF == ord('s'):
+      flag = not flag
     
     # 왼손, 오른손, 몸, 얼굴 좌표 추출해 str로 변환 후 저장
     data_left = str(results.left_hand_landmarks)
@@ -158,20 +167,12 @@ with mp_holistic.Holistic(
     # part_data = [data_face, data_left, data_right, data_pose]
 
     # face 제외하고 전송
-    part = ["left", "right", "pose"]
     part_data = [data_left, data_right, data_pose]
 
-    # 좌우반전해 영상출력
-    cv2.imshow('MediaPipe Holistic', cv2.flip(image, 1))
-
-    # s키로 landmark 전송 제어
-    if cv2.waitKey(5) & 0xFF == ord('s'):
-      flag = not flag
-      
     # flag가 True면 Landmarks 전송
     if flag:
       # 소켓 통신을 이용한 좌표 전송
-      landmarks = transformer(part_data, part)
+      landmarks = transformer(part_data, ["left", "right", "pose"])
 
       # 전체 랜드마크 전송
       connectionSock.send(landmarks.encode('utf-8'))
