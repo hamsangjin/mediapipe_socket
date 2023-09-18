@@ -41,24 +41,24 @@ def transformer(data, part):
 
 # -----------------------------------------------------
 
-# 소켓 사전 연결
-port = 25001
+# # 소켓 사전 연결
+# port = 25001
 
-# AF는 주소 체계로, 거의 AF_INET 사용 AF_INET은 IPv4, AF_INET6은 IPv6를 의미
-serverSock = socket(AF_INET, SOCK_STREAM)
+# # AF는 주소 체계로, 거의 AF_INET 사용 AF_INET은 IPv4, AF_INET6은 IPv6를 의미
+# serverSock = socket(AF_INET, SOCK_STREAM)
 
-# 재사용 대기시간 없애기
-serverSock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+# # 재사용 대기시간 없애기
+# serverSock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
-# ''는 AF_INET에서 모든 인터페이스와 연결한다는 의미
-serverSock.bind(('', port))
+# # ''는 AF_INET에서 모든 인터페이스와 연결한다는 의미
+# serverSock.bind(('', port))
 
-# 인자는 동시접속 허용 개수
-serverSock.listen(1)
+# # 인자는 동시접속 허용 개수
+# serverSock.listen(1)
 
-# client가 접속 요청할 때 결과값이 return됨 / accept() 실행시 새로운 소켓이 생성됨
-# 기존에 생성한 serverSock이 아닌 새로운 connectionSock를 통해서 데이터 주고받음
-connectionSock, addr = serverSock.accept()
+# # client가 접속 요청할 때 결과값이 return됨 / accept() 실행시 새로운 소켓이 생성됨
+# # 기존에 생성한 serverSock이 아닌 새로운 connectionSock를 통해서 데이터 주고받음
+# connectionSock, addr = serverSock.accept()
 
 flag = False
 
@@ -105,57 +105,66 @@ while cap.isOpened():
     
     # 감지된 객체(사람)들에 대해서 반복
     for (xmin, ymin, xmax, ymax, confidence, clas) in result.xyxy[0].tolist():
-        # 자세 추정을 위한 mediapipe holistic 객체를 초기화
-        with mp_holistic.Holistic(min_detection_confidence=0.3, min_tracking_confidence=0.3) as holistic:
-            # 감지된 객체 이미지 부분 처리
-            results = holistic.process(image[int(ymin)+MARGIN:int(ymax)+MARGIN, int(xmin)+MARGIN:int(xmax)+MARGIN:])
+       print('---------------------------------')
+       print('xmin :', xmin)
+       print('ymin :', ymin)
+       print('xmax :', xmax)
+       print('ymax :', ymax)
+       print('confidence :', confidence)
+       print('clas :', clas)
+       print('---------------------------------')
+
+        # # 자세 추정을 위한 mediapipe holistic 객체를 초기화
+        # with mp_holistic.Holistic(min_detection_confidence=0.3, min_tracking_confidence=0.3) as holistic:
+        #     # 감지된 객체 이미지 부분 처리
+        #     results = holistic.process(image[int(ymin)+MARGIN:int(ymax)+MARGIN, int(xmin)+MARGIN:int(xmax)+MARGIN:])
             
-            # 랜드마크를 그림
-            mp_drawing.draw_landmarks(
-                image[int(ymin)+MARGIN:int(ymax)+MARGIN, int(xmin)+MARGIN:int(xmax)+MARGIN:],
-                results.pose_landmarks,
-                mp_holistic.POSE_CONNECTIONS,
-                mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2),
-                mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2))
+        #     # 랜드마크를 그림
+        #     mp_drawing.draw_landmarks(
+        #         image[int(ymin)+MARGIN:int(ymax)+MARGIN, int(xmin)+MARGIN:int(xmax)+MARGIN:],
+        #         results.pose_landmarks,
+        #         mp_holistic.POSE_CONNECTIONS,
+        #         mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2),
+        #         mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2))
             
-            # img_list에 이미지 부분 추가
-            img_list.append(image[int(ymin):int(ymax), int(xmin):int(xmax):])
+        #     # img_list에 이미지 부분 추가
+        #     img_list.append(image[int(ymin):int(ymax), int(xmin):int(xmax):])
 
             # --------------------------------------------
-            # 왼손, 오른손, 몸, 얼굴 좌표 추출해 str로 변환 후 저장
-            data_left = str(results.left_hand_landmarks)
-            data_right = str(results.right_hand_landmarks)
-            data_pose = str(results.pose_world_landmarks)
-            data_face = str(results.face_landmarks)
+            # # 왼손, 오른손, 몸, 얼굴 좌표 추출해 str로 변환 후 저장
+            # data_left = str(results.left_hand_landmarks)
+            # data_right = str(results.right_hand_landmarks)
+            # data_pose = str(results.pose_world_landmarks)
+            # data_face = str(results.face_landmarks)
 
-            # face 포함해서 전송
-            # part = ["face", "left", "right", "pose"]
-            # part_data = [data_face, data_left, data_right, data_pose]
+            # # face 포함해서 전송
+            # # part = ["face", "left", "right", "pose"]
+            # # part_data = [data_face, data_left, data_right, data_pose]
 
-            # face 제외하고 전송
-            temp = [data_left, data_right, data_pose]
-            part_data = []
-            part_data.append(temp)
+            # # face 제외하고 전송
+            # temp = [data_left, data_right, data_pose]
+            # part_data = []
+            # part_data.append(temp)
             
 
-    # s키로 landmark 전송 제어
-    if cv2.waitKey(5) & 0xFF == ord('s'):
-        flag = not flag
+    # # s키로 landmark 전송 제어
+    # if cv2.waitKey(5) & 0xFF == ord('s'):
+    #     flag = not flag
     
-    # flag가 True면 Landmarks 전송
-    if flag:
-        # 소켓 통신을 이용한 좌표 전송
-        landmarks = []
-        # []로 한 프레임에 잡힌 객체들 묶기
-        for i in range(len(part_data)):
-            landmarks.append(transformer(part_data[i], ["left", "right", "pose"]))
-        # {}로 또 묶기
-        landmarks = {"data": landmarks}
-        # json으로 변환
-        landmarks = json.dumps(landmarks, indent=2, ensure_ascii=False)
+    # # flag가 True면 Landmarks 전송
+    # if flag:
+    #     # 소켓 통신을 이용한 좌표 전송
+    #     landmarks = []
+    #     # []로 한 프레임에 잡힌 객체들 묶기
+    #     for i in range(len(part_data)):
+    #         landmarks.append(transformer(part_data[i], ["left", "right", "pose"]))
+    #     # {}로 또 묶기
+    #     landmarks = {"data": landmarks}
+    #     # json으로 변환
+    #     landmarks = json.dumps(landmarks, indent=2, ensure_ascii=False)
 
-        # 전체 랜드마크 전송
-        connectionSock.send(landmarks.encode('utf-8'))
+    #     # 전체 랜드마크 전송
+    #     connectionSock.send(landmarks.encode('utf-8'))
 
 # {
 #   "1": [
