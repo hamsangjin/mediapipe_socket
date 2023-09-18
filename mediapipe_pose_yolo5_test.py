@@ -64,8 +64,9 @@ flag = False
 
 # --------------------------------------
 
-# Torch Hub에서 'ultralytics/yolov5' 저장소로부터 YOLOv5 모델을 불러오기
-yolo_model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+# Torch Hub에서 'ultralytics/yolov5' 저장소로부터 YOLOv5 모델(s)을 불러오기
+# yolo_model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+yolo_model = torch.hub.load('ultralytics/yolov5', 'yolov5x6')
 
 # YOLOv5 모델에 클래스 설정
 # 여기서는 인덱스 0인 하나의 클래스만 사용
@@ -170,8 +171,6 @@ while cap.isOpened():
 #       },
 #         ]
 # }
-
-
     # --------------------------------------------
 
     # 랜드마크 화면 출력
