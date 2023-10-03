@@ -5,6 +5,7 @@ import torch
 import re
 import json
 from socket import *
+import time
 
 pattern = r"landmark {\s+x: ([+-]?\d+\.\d+)\s+y: ([+-]?\d+\.\d+)\s+z: ([+-]?\d+\.\d+)"
 
@@ -35,14 +36,24 @@ connectionSock, addr = serverSock.accept()
 # --------------------------------------
 
 yolo_model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+
+yolo_model.conf = 0.9         # 객체 감지의 신뢰도 임계값(0~1)
+yolo_model.dynamic = True     # 입력 이미지 크기를 동적으로 조정하여 최상의 성능을 얻을지 여부
+yolo_model.pretrained = True  # 이미 학습된 가중치를 사용하여 모델을 초기화할지 여부
+yolo_model.classes=[0]
+
 # yolo_model.to(torch.device('cuda'))
 
-yolo_model.classes=[0]
 
 mp_drawing = mp.solutions.drawing_utils
 mp_holistic = mp.solutions.holistic
 
 cap = cv2.VideoCapture(0)
+
+frameCnt = 0
+start = True
+startTime = 0
+MARGIN=1
 
 holistic = []
 for i in range(5):
@@ -62,12 +73,25 @@ while cap.isOpened():
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False    
 
-    result = yolo_model(image)    
+    if start:
+        start = False
+        startTime = time.time()
+        result = yolo_model(image)
+
+    if (time.time() - startTime >= 1):
+        result = yolo_model(image)
+        fps = frameCnt / (time.time() - startTime)
+        print(f"Frames per second: {fps:.2f}")
+        print(frameCnt)
+        frameCnt = 0
+        startTime = time.time()
     
+    frameCnt += 1
+
     image.flags.writeable = True   
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-    MARGIN=10
+    
     part_data = []
 
     resultlist = result.xyxy[0].tolist()
