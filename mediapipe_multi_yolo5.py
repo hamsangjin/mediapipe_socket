@@ -25,14 +25,12 @@ def transformer(data, part):
 
 # -----------------------------------------------------
 
-# port = 25001
-# serverSock = socket(AF_INET, SOCK_STREAM)
-# serverSock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-# serverSock.bind(('', port))
-# serverSock.listen(1)
-# connectionSock, addr = serverSock.accept()
-
-# flag = False
+port = 25001
+serverSock = socket(AF_INET, SOCK_STREAM)
+serverSock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+serverSock.bind(('', port))
+serverSock.listen(1)
+connectionSock, addr = serverSock.accept()
 
 # --------------------------------------
 
@@ -49,12 +47,12 @@ cap = cv2.VideoCapture(0)
 holistic = []
 for i in range(5):
   holistic.append(mp_holistic.Holistic(
-    min_detection_confidence=0.5,
+    min_detection_confidence=0.1,
     min_tracking_confidence=0.9,
-    model_complexity=1,
+    model_complexity=0,
     smooth_segmentation=False,
-    enable_segmentation=False,
-    refine_face_landmarks=False))
+    enable_segmentation=True,
+    refine_face_landmarks=True))
 
 while cap.isOpened():    
     success, image = cap.read()
@@ -72,11 +70,13 @@ while cap.isOpened():
     MARGIN=10
     part_data = []
 
-    for i in range(len(result.xyxy[0].tolist())):
-        xmin, ymin, xmax, ymax, confidence, clas = result.xyxy[0].tolist()[i]
+    resultlist = result.xyxy[0].tolist()
+
+    for i in range(len(resultlist)):
+        xmin, ymin, xmax, ymax, confidence, clas = resultlist[i]
 
         results = holistic[i].process(image[int(ymin)+MARGIN:int(ymax)+MARGIN,int(xmin)+MARGIN:int(xmax)+MARGIN:])
-
+        
         mp_drawing.draw_landmarks(image[int(ymin)+MARGIN:int(ymax)+MARGIN,int(xmin)+MARGIN:int(xmax)+MARGIN:], results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
                             mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
                             mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
@@ -100,8 +100,7 @@ while cap.isOpened():
 
     landmarks = {"data": landmarks}
     landmarks = json.dumps(landmarks, indent=2, ensure_ascii=False)
-    # print(landmarks)
-    # connectionSock.send(landmarks.encode('utf-8'))
+    connectionSock.send(landmarks.encode('utf-8'))
 
     # --------------------------------------
 

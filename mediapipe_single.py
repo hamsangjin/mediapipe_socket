@@ -111,7 +111,7 @@ with mp_holistic.Holistic(
     # part_data = [data_face, data_left, data_right, data_pose]
     part_data = [data_left, data_right, data_pose]
     landmarks = transformer(part_data, ["left", "right", "pose"])
-    # connectionSock.send(landmarks.encode('utf-8'))
+    connectionSock.send(landmarks.encode('utf-8'))
 
     if cv2.waitKey(5) & 0xFF == 27:
       serverSock.close()
