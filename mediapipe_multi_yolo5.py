@@ -41,9 +41,7 @@ yolo_model.conf = 0.9         # 객체 감지의 신뢰도 임계값(0~1)
 yolo_model.dynamic = True     # 입력 이미지 크기를 동적으로 조정하여 최상의 성능을 얻을지 여부
 yolo_model.pretrained = True  # 이미 학습된 가중치를 사용하여 모델을 초기화할지 여부
 yolo_model.classes=[0]
-
 # yolo_model.to(torch.device('cuda'))
-
 
 mp_drawing = mp.solutions.drawing_utils
 mp_holistic = mp.solutions.holistic
@@ -53,10 +51,10 @@ cap = cv2.VideoCapture(0)
 frameCnt = 0
 start = True
 startTime = 0
-MARGIN=1
+MARGIN = 1
 
 holistic = []
-for i in range(5):
+for i in range(2):
   holistic.append(mp_holistic.Holistic(
     min_detection_confidence=0.1,
     min_tracking_confidence=0.9,
@@ -78,26 +76,21 @@ while cap.isOpened():
         startTime = time.time()
         result = yolo_model(image)
 
-    if (time.time() - startTime >= 1):
+    if (frameCnt == 3):
         result = yolo_model(image)
-        fps = frameCnt / (time.time() - startTime)
-        print(f"Frames per second: {fps:.2f}")
-        print(frameCnt)
         frameCnt = 0
-        startTime = time.time()
     
     frameCnt += 1
 
     image.flags.writeable = True   
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-    
     part_data = []
 
-    resultlist = result.xyxy[0].tolist()
+    resultList = result.xyxy[0].tolist()
 
-    for i in range(len(resultlist)):
-        xmin, ymin, xmax, ymax, confidence, clas = resultlist[i]
+    for i in range(len(resultList)):
+        xmin, ymin, xmax, ymax, confidence, clas = resultList[i]
 
         results = holistic[i].process(image[int(ymin)+MARGIN:int(ymax)+MARGIN,int(xmin)+MARGIN:int(xmax)+MARGIN:])
         
@@ -128,8 +121,14 @@ while cap.isOpened():
 
     # --------------------------------------
 
-    cv2.imshow('MediaPipe Holistic', cv2.flip(image, 1))
+    fps = 1 / (time.time() - startTime)
+    startTime = time.time()
+    fps_str = "FPS : %0.1f" %fps
 
+    image = cv2.flip(image, 1)
+    cv2.putText(image, fps_str, (0, 75), cv2.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0))
+    cv2.imshow('MediaPipe Holistic', image)
+    
     if cv2.waitKey(5) & 0xFF == 27:
         break
 
