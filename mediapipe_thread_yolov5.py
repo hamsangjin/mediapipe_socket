@@ -8,25 +8,34 @@ from socket import *
 import time
 import threading
 
+pattern = r"landmark {\s+x: ([+-]?\d+\.\d+)\s+y: ([+-]?\d+\.\d+)\s+z: ([+-]?\d+\.\d+)"
+
+# Landmarks -> Json
+def transformer(data, part):
+    landmarks = []
+    for i in range(len(data)):
+        matches_list = []
+        for j in range(len(data[i])):
+            matches_list.append(re.findall(pattern, data[i][j]))
+
+        output_data = {part[0]: [], part[1]: [], part[2]: []}
+
+        for j, matches in enumerate(matches_list):
+            for _, match in enumerate(matches):
+                x, y, z = map(float, match)
+                output_data[part[j]].append({"x": round(x, 3), "y": round(y, 3), "z": round(z, 3)})
+
+        landmarks.append(output_data)
+    
+    landmarks = {"data": landmarks}
+    landmarks = json.dumps(landmarks, indent=2, ensure_ascii=False)
+
+    return landmarks
+
 global MARGIN
 MARGIN = 1
-    
-pattern = r"landmark {\s+x: ([+-]?\d+\.\d+)\s+y: ([+-]?\d+\.\d+)\s+z: ([+-]?\d+\.\d+)"
-def transformer(data, part):
-    matches_list = []
 
-    for i in range(len(data)):
-        matches_list.append(re.findall(pattern, data[i]))
-
-    output_data = {part[0]: [], part[1]: [], part[2]: []}
-
-    for i, matches in enumerate(matches_list):
-        for _, match in enumerate(matches):
-            x, y, z = map(float, match)
-            output_data[part[i]].append({"x": round(x, 3), "y": round(y, 3), "z": round(z, 3)})
-
-    return output_data
-
+# Holistic Model Processing
 def holiticProcess(image, resultList, holistic, part_data):
     xmin, ymin, xmax, ymax, confidence, clas = resultList
 
@@ -50,7 +59,7 @@ def holiticProcess(image, resultList, holistic, part_data):
     part_data.append(temp)
 
 if __name__ == '__main__':
-    # 소켓 연결
+    # Socket Connect
     port = 25001
     serverSock = socket(AF_INET, SOCK_STREAM)
     serverSock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -58,13 +67,13 @@ if __name__ == '__main__':
     serverSock.listen(1)
     connectionSock, addr = serverSock.accept()
 
-    # Yolo 모델 설정
+    # YOLO Model Setting
     yolo_model = torch.hub.load('ultralytics/yolov5', 'yolov5x6')
     yolo_model.conf = 0.5
     yolo_model.dynamic = True
     yolo_model.pretrained = True
     yolo_model.classes=[0]
-    yolo_model.to(torch.device('cpu'))
+    yolo_model.to(torch.device('cuda'))
 
     mp_drawing = mp.solutions.drawing_utils
     mp_holistic = mp.solutions.holistic
@@ -90,18 +99,18 @@ if __name__ == '__main__':
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False    
         
-        # 처음 시작할 때 초기값들 설정
+        # Start Setting
         if start:
             start = False
             startTime = time.time()
             fps_avg_start = time.time()
             result = yolo_model(image)
 
-        # 3프레임마다 Yolo 동작
+        # Yolo Operates Every 3 Prames
         if (frameCnt == 3):
             result = yolo_model(image)
             fps = 3 / (time.time() - startTime)
-            fps_avg.append(fps)             # 평균 보기
+            fps_avg.append(fps)
             print(f"Frames per second: {fps:.2f}")
             frameCnt = 0
             startTime = time.time()
@@ -114,7 +123,7 @@ if __name__ == '__main__':
         resultList = result.xyxy[0].tolist()
         part_data, threads = [], []
 
-        # 멀티 스레드로 mediapipe holistic 모델 처리
+        # MediaPipe Holistic Model Multi Thread Proccesing
         for i in range(len(resultList)):
             th = threading.Thread(target=holiticProcess, args=(image, resultList[i], holistic[i], part_data, ))
             th.start()
@@ -123,16 +132,12 @@ if __name__ == '__main__':
         for th in threads:
             th.join()
 
-        # 랜드마크 추출해 데이터 전처리 후 소켓을 통해 유니티에 전송
-        landmarks = []
-        for i in range(len(part_data)):
-            landmarks.append(transformer(part_data[i], ["left", "right", "pose"]))
-
-        landmarks = {"data": landmarks}
-        landmarks = json.dumps(landmarks, indent=2, ensure_ascii=False)
+        # Landmarks -> Json
+        # Socket Send
+        landmarks = transformer(part_data, ["left", "right", "pose"])
         connectionSock.send(landmarks.encode('utf-8'))
         
-        # fps 화면에 출력
+        # FPS Print
         fps_str = "FPS : %0.1f" %fps
         image = cv2.flip(image, 1)
         cv2.putText(image, fps_str, (0, 75), cv2.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0))
