@@ -36,7 +36,7 @@ global MARGIN
 MARGIN = 1
 
 # Holistic Model Processing
-def holiticProcess(image, resultList, holistic, part_data):
+def holiticProcess(image, resultList, holistic, part_data, i):
     xmin, ymin, xmax, ymax, confidence, clas = resultList
 
     results = holistic.process(image[int(ymin)+MARGIN:int(ymax)+MARGIN,int(xmin)+MARGIN:int(xmax)+MARGIN:])
@@ -54,9 +54,8 @@ def holiticProcess(image, resultList, holistic, part_data):
     data_pose = str(results.pose_world_landmarks)
     # data_face = str(results.face_landmarks)
 
-    temp = [data_left, data_right, data_pose]
+    part_data[i] = [data_left, data_right, data_pose]
 
-    part_data.append(temp)
 
 if __name__ == '__main__':
     # Socket Connect
@@ -121,11 +120,11 @@ if __name__ == '__main__':
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         resultList = result.xyxy[0].tolist()
-        part_data, threads = [], []
+        part_data, threads = [[], [], [], [], []], []
 
         # MediaPipe Holistic Model Multi Thread Proccesing
         for i in range(len(resultList)):
-            th = threading.Thread(target=holiticProcess, args=(image, resultList[i], holistic[i], part_data, ))
+            th = threading.Thread(target=holiticProcess, args=(image, resultList[i], holistic[i], part_data, i, ))
             th.start()
             threads.append(th)
 
