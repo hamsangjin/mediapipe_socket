@@ -37,16 +37,21 @@ MARGIN = 1
 
 # Holistic Model Processing
 def holiticProcess(image, resultList, holistic, part_data, i):
-    xmin, ymin, xmax, ymax, confidence, clas = resultList
+    xmin, ymin, xmax, ymax, confidence, clas = map(int, resultList)
 
-    results = holistic.process(image[int(ymin)+MARGIN:int(ymax)+MARGIN,int(xmin)+MARGIN:int(xmax)+MARGIN:])
+    x1, y1 = xmin, ymin
+    x2, y2 = xmax, ymax
+
+    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+    results = holistic.process(image[ymin+MARGIN:ymax+MARGIN,xmin+MARGIN:xmax+MARGIN:])
     
     mp_drawing.draw_landmarks(
-        image[int(ymin)+MARGIN:int(ymax)+MARGIN,int(xmin)+MARGIN:int(xmax)+MARGIN:], 
+        image[ymin+MARGIN:ymax+MARGIN,xmin+MARGIN:xmax+MARGIN:], 
         results.pose_landmarks, 
         mp_holistic.POSE_CONNECTIONS,
         mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
-        mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
+        mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
     )
     
     data_left = str(results.left_hand_landmarks)
@@ -119,7 +124,7 @@ if __name__ == '__main__':
         image.flags.writeable = True   
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        resultList = result.xyxy[0].tolist()
+        resultList = sorted(result.xyxy[0].tolist())
         part_data, threads = [[], [], [], [], []], []
 
         # MediaPipe Holistic Model Multi Thread Proccesing
