@@ -37,7 +37,7 @@ MARGIN = 1
 
 # Holistic Model Processing
 def holiticProcess(image, resultList, holistic, part_data, i):
-    xmin, ymin, xmax, ymax, confidence, clas = map(int, resultList)
+    xmin, ymin, xmax, ymax, _, _ = map(int, resultList)
 
     x1, y1 = xmin, ymin
     x2, y2 = xmax, ymax
@@ -53,11 +53,35 @@ def holiticProcess(image, resultList, holistic, part_data, i):
         mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
         mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
     )
+
+    mp_drawing.draw_landmarks(
+        image,
+        results.face_landmarks,
+        mp_holistic.FACEMESH_CONTOURS,
+        landmark_drawing_spec=None,
+        connection_drawing_spec=mp_drawing_styles
+        .get_default_face_mesh_contours_style()
+    )
+    
+    mp_drawing.draw_landmarks(
+        image[ymin+MARGIN:ymax+MARGIN,xmin+MARGIN:xmax+MARGIN:],
+        results.right_hand_landmarks,
+        mp_holistic.HAND_CONNECTIONS,
+        landmark_drawing_spec=mp_drawing_styles
+        .get_default_hand_landmarks_style()
+    )    
+    
+    mp_drawing.draw_landmarks(
+      image[ymin+MARGIN:ymax+MARGIN,xmin+MARGIN:xmax+MARGIN:],
+      results.left_hand_landmarks,
+      mp_holistic.HAND_CONNECTIONS,
+      landmark_drawing_spec=mp_drawing_styles
+      .get_default_hand_landmarks_style()
+    )  
     
     data_left = str(results.left_hand_landmarks)
     data_right = str(results.right_hand_landmarks)
     data_pose = str(results.pose_world_landmarks)
-    # data_face = str(results.face_landmarks)
 
     part_data[i] = [data_left, data_right, data_pose]
 
@@ -72,16 +96,21 @@ if __name__ == '__main__':
     connectionSock, addr = serverSock.accept()
 
     # YOLO Model Setting
-    yolo_model = torch.hub.load('ultralytics/yolov5', 'yolov5x6')
+    yolo_model = torch.hub.load('/Users/sangjin/Desktop/yolov5', 'custom',  'yolov5x6.pt', source='local')
     yolo_model.conf = 0.5
     yolo_model.dynamic = True
     yolo_model.pretrained = True
     yolo_model.classes=[0]
-    yolo_model.to(torch.device('cuda'))
+    yolo_model.to(torch.device('cpu'))
 
     mp_drawing = mp.solutions.drawing_utils
+    mp_drawing_styles = mp.solutions.drawing_styles
     mp_holistic = mp.solutions.holistic
     cap = cv2.VideoCapture(0)
+
+    # 웹캠 해상도 설정
+    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
     frameCnt, fps, startTime, fps_avg, start = 0, 0, 0, [], True
 
@@ -95,7 +124,7 @@ if __name__ == '__main__':
         enable_segmentation=True,
         refine_face_landmarks=True))
 
-    while cap.isOpened():    
+    while cap.isOpened():
         success, image = cap.read()
         if not success:
             continue
@@ -144,7 +173,7 @@ if __name__ == '__main__':
         # FPS Print
         fps_str = "FPS : %0.1f" %fps
         image = cv2.flip(image, 1)
-        cv2.putText(image, fps_str, (0, 75), cv2.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0))
+        cv2.putText(image, fps_str, (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0))
 
         cv2.imshow('MediaPipe Holistic', image)
 
