@@ -55,7 +55,7 @@ def holiticProcess(image, resultList, holistic, part_data, i):
     )
 
     mp_drawing.draw_landmarks(
-        image,
+        image[ymin+MARGIN:ymax+MARGIN,xmin+MARGIN:xmax+MARGIN:],
         results.face_landmarks,
         mp_holistic.FACEMESH_CONTOURS,
         landmark_drawing_spec=None,
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     yolo_model.dynamic = True
     yolo_model.pretrained = True
     yolo_model.classes=[0]
-    yolo_model.to(torch.device('cpu'))
+    yolo_model.to(torch.device('cuda'))
 
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
@@ -115,11 +115,11 @@ if __name__ == '__main__':
     frameCnt, fps, startTime, fps_avg, start = 0, 0, 0, [], True
 
     holistic = []
-    for i in range(5):
+    for i in range(2):
         holistic.append(mp_holistic.Holistic(
         min_detection_confidence=0.1,
         min_tracking_confidence=0.9,
-        model_complexity=0,
+        model_complexity=1,
         smooth_segmentation=False,
         enable_segmentation=True,
         refine_face_landmarks=True))
@@ -154,7 +154,10 @@ if __name__ == '__main__':
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         resultList = sorted(result.xyxy[0].tolist())
-        part_data, threads = [[], [], [], [], []], []
+
+        part_data, threads = [], []
+        for _ in range(len(resultList)):
+            part_data.append([])
 
         # MediaPipe Holistic Model Multi Thread Proccesing
         for i in range(len(resultList)):
@@ -173,7 +176,7 @@ if __name__ == '__main__':
         # FPS Print
         fps_str = "FPS : %0.1f" %fps
         image = cv2.flip(image, 1)
-        cv2.putText(image, fps_str, (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0))
+        cv2.putText(image, fps_str, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
 
         cv2.imshow('MediaPipe Holistic', image)
 
